@@ -1,40 +1,53 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "../api";
-import io from "socket.io-client";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles.css";
 
-const socket = io(import.meta.env.VITE_SOCKET_URL);
-
-export default function PollPage() {
+function PollPage() {
   const { id } = useParams();
   const [poll, setPoll] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    socket.emit("join-poll", id);
-    axios.get(`/polls/${id}`).then((res) => setPoll(res.data));
+    const fetchPoll = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/polls/${id}`);
+        setPoll(res.data);
+      } catch (error) {
+        console.error("Error fetching poll:", error);
+      }
+    };
+    fetchPoll();
 
-    socket.on("poll-updated", (updatedPoll) => {
-      if (updatedPoll.shortId === id) setPoll(updatedPoll);
-    });
-
-    return () => socket.off("poll-updated");
+    // Optional: auto-refresh results every 2 seconds (like “real-time” updates)
+    const interval = setInterval(fetchPoll, 2000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const handleVote = async (index) => {
-    await axios.post(`/polls/${id}/vote`, { optionIndex: index });
+    try {
+      const res = await axios.post(`http://localhost:5000/api/polls/${id}/vote`, { optionIndex: index });
+      setPoll(res.data); // instantly update after vote
+    } catch (error) {
+      console.error("Error voting:", error);
+    }
   };
 
-  if (!poll) return <p>Loading poll...</p>;
+  if (!poll) return <p style={{ textAlign: "center" }}>Loading poll...</p>;
 
   return (
     <div className="container">
       <h2>{poll.question}</h2>
       {poll.options.map((opt, i) => (
-        <button key={i} onClick={() => handleVote(i)}>
+        <button key={i} className="poll-button" onClick={() => handleVote(i)}>
           {opt.text} ({opt.votes})
         </button>
       ))}
+      <button style={{ marginTop: "10px" }} onClick={() => navigate("/")}>
+        Create New Poll
+      </button>
     </div>
   );
 }
+
+export default PollPage;
