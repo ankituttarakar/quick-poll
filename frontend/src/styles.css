@@ -1,467 +1,325 @@
-/* --- Global & App Layout --- */
+/* === QUICKPOLL CYBER GLOW THEME === */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Poppins:wght@400;500;600&display=swap');
+
 :root {
-  --primary-color: #2563eb; /* blue-600 */
-  --light-gray: #f3f4f6;    /* gray-100 */
-  --medium-gray: #d1d5db;   /* gray-300 */
-  --dark-gray: #4b5563;     /* gray-600 */
-  --text-color: #1f2937;    /* gray-800 */
-  --white: #ffffff;
-  --red: #ef4444;           /* red-500 */
+  --neon-blue: #00eaff;
+  --neon-pink: #ff00ff;
+  --neon-green: #00ff99;
+  --dark-bg: #050512;
+  --panel-bg: rgba(20, 20, 35, 0.85);
+  --text: #e9f2ff;
+  --muted: #9ca3c7;
+  --border: rgba(0, 255, 255, 0.15);
+  --glow: 0 0 25px rgba(0, 255, 255, 0.3);
 }
 
+/* === GLOBAL === */
 body {
+  background: radial-gradient(circle at 30% 10%, #09091f, #030310 90%);
+  color: var(--text);
+  font-family: "Poppins", sans-serif;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  min-height: 100vh; /* full height */
-  background-color: var(--light-gray);
+  min-height: 100vh;
+  padding-top: 60px;
+  animation: bgShift 12s infinite alternate ease-in-out;
 }
 
+@keyframes bgShift {
+  0% { background: radial-gradient(circle at 20% 30%, #0b0b22, #040411 90%); }
+  100% { background: radial-gradient(circle at 80% 70%, #0d0d32, #040411 90%); }
+}
+
+/* === HEADER === */
 header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 header h1 {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 2.25rem; /* 36px */
-  font-weight: 700;
-  color: var(--primary-color);
-  margin: 0;
+  font-family: "Orbitron", sans-serif;
+  font-size: 2.6rem;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 18px rgba(0, 230, 255, 0.6);
+  animation: pulseTitle 3s infinite ease-in-out;
+}
+
+@keyframes pulseTitle {
+  0%,100% { text-shadow: 0 0 25px rgba(0,255,255,0.6); }
+  50% { text-shadow: 0 0 35px rgba(255,0,255,0.6); }
 }
 
 header p {
-  font-size: 1.125rem; /* 18px */
-  color: var(--dark-gray);
-  margin-top: 4px;
+  color: var(--muted);
+  font-size: 1.1rem;
 }
 
-/* --- Main Container --- */
-/* THIS RULE CENTERS THE CREATE POLL PAGE */
-.container {
-  background-color: var(--white);
+/* === CONTAINER === */
+.container, .poll-page-container, .poll-results {
+  background: var(--panel-bg);
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 0 30px rgba(0,255,255,0.08);
+  backdrop-filter: blur(10px);
+  padding: 40px;
   max-width: 600px;
-  margin: 0 auto; 
-  padding: 24px 32px;
-  border-radius: 12px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  width: 90%;
+  animation: fadeUp 0.8s ease-in-out;
 }
 
-.container h2 {
-  font-size: 1.875rem; /* 30px */
-  font-weight: 600;
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === HEADINGS === */
+.container h2, .poll-results h3 {
+  font-family: "Orbitron", sans-serif;
+  font-size: 2rem;
   text-align: center;
-  margin-top: 0;
-  margin-bottom: 24px;
+  color: var(--neon-blue);
+  text-shadow: 0 0 15px rgba(0,255,255,0.5);
+  margin-bottom: 30px;
 }
 
-/* --- Form Elements --- */
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-form > input[type="text"] {
+/* === INPUTS === */
+input[type="text"], input[type="datetime-local"] {
   width: 100%;
-  padding: 12px 16px;
-  font-size: 1rem;
-  border: 1px solid var(--medium-gray);
-  border-radius: 8px;
-  box-sizing: border-box; 
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 16px 18px;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  transition: 0.3s ease;
+  box-shadow: inset 0 0 10px rgba(0,255,255,0.05);
 }
 
-form > input[type="text"]:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+input[type="text"]:hover, input[type="datetime-local"]:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0,255,255,0.25);
+}
+
+input[type="text"]:focus, input[type="datetime-local"]:focus {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 20px rgba(0,255,255,0.5);
+  background: rgba(0,255,255,0.06);
   outline: none;
 }
 
-.form-label {
-  font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: -8px;
+::placeholder {
+  color: #8492b8;
+  letter-spacing: 0.3px;
 }
 
-/* --- Option Input Styling --- */
-.option-input-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.option-input-group input[type="text"] {
-  flex-grow: 1;
-  padding: 12px 16px;
-  font-size: 1rem;
-  border: 1px solid var(--medium-gray);
-  border-radius: 8px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.option-input-group input[type="text"]:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-  outline: none;
-}
-
-.remove-option-btn {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: var(--dark-gray);
-  font-size: 1.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0 8px;
-  transition: color 0.2s;
-}
-
-.remove-option-btn:hover {
-  color: var(--red);
-}
-
-/* --- Buttons --- */
-button {
-  padding: 12px 16px;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
+/* === ADD OPTION BUTTON === */
 .add-option-btn {
-  background-color: var(--white);
-  color: var(--primary-color);
-  border: 1px dashed var(--primary-color);
+  margin-top: 10px;
+  background: transparent;
+  color: var(--neon-green);
+  border: 1px dashed var(--neon-green);
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  width: 100%;
+  transition: all 0.3s;
 }
 
 .add-option-btn:hover {
-  background-color: rgba(37, 99, 235, 0.05);
+  background: rgba(0,255,153,0.08);
+  box-shadow: 0 0 18px rgba(0,255,153,0.4);
+  transform: translateY(-2px);
 }
 
-.create-poll-btn {
-  background-color: var(--primary-color);
-  color: var(--white);
-}
-
-.create-poll-btn:hover {
-  background-color: #1d4ed8; /* darker blue */
-}
-
-/* --- Poll Settings (NEW) --- */
+/* === POLL SETTINGS === */
 .poll-settings {
-  border-top: 1px solid var(--light-gray);
-  margin-top: 16px;
-  padding-top: 24px;
+  margin-top: 25px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 20px;
 }
 
 .poll-settings h4 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-family: "Orbitron", sans-serif;
+  color: var(--neon-blue);
+  text-shadow: 0 0 12px rgba(0,230,255,0.4);
+  font-size: 1.25rem;
+  margin-bottom: 15px;
 }
 
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  gap: 16px;
-}
-
-.setting-row label {
-  font-weight: 500;
-  color: var(--dark-gray);
-}
-
-/* Custom Checkbox */
+/* Checkbox */
 input[type="checkbox"] {
-  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
   appearance: none;
-  background-color: var(--white);
-  margin: 0;
-  font: inherit;
-  color: currentColor;
-  width: 1.25em;
-  height: 1.25em;
-  border: 1px solid var(--medium-gray);
-  border-radius: 4px;
-  transform: translateY(-0.075em);
-  display: grid;
-  place-content: center;
+  background: transparent;
+  border: 2px solid var(--neon-green);
+  border-radius: 6px;
   cursor: pointer;
+  transition: all 0.25s;
 }
 
-input[type="checkbox"]::before {
-  content: "";
-  width: 0.65em;
-  height: 0.65em;
-  transform: scale(0);
-  transition: 120ms transform ease-in-out;
-  box-shadow: inset 1em 1em var(--primary-color);
-  transform-origin: bottom left;
-  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+input[type="checkbox"]:checked {
+  background: var(--neon-green);
+  box-shadow: 0 0 15px rgba(0,255,153,0.6);
 }
 
-input[type="checkbox"]:checked::before {
-  transform: scale(1);
-}
-
-input[type="checkbox"]:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-}
-
-/* Datetime Input */
-input[type="datetime-local"] {
-  font-family: inherit;
-  font-size: 0.95rem;
-  padding: 8px 12px;
-  border: 1px solid var(--medium-gray);
-  border-radius: 8px;
-  color: var(--dark-gray);
-}
-
-input[type="datetime-local"]:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-  outline: none;
-}
-
-/* --- Error Messages (NEW) --- */
-.error-message {
-  background-color: #fee2e2; /* red-100 */
-  color: #b91c1c; /* red-800 */
-  border: 1px solid #f87171; /* red-400 */
-  padding: 12px 16px;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: 500;
-}
-
-/* --- Poll Page Styling --- */
-.poll-page-container {
-  max-width: 600px;
-  margin: 0 auto; /* THIS CENTERS THE POLL/RESULTS PAGE */
-}
-
-.poll-info {
-  background-color: var(--white);
-  padding: 24px 32px;
-  border-radius: 12px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  margin-bottom: 24px;
-}
-
-.poll-info h2 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 1.875rem;
+/* === CREATE POLL BUTTON === */
+.create-poll-btn, .vote-btn {
+  margin-top: 25px;
+  width: 100%;
+  padding: 16px;
+  font-size: 1.1rem;
   font-weight: 600;
+  color: white;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.4s ease-in-out;
+  box-shadow: 0 0 25px rgba(0,230,255,0.4);
 }
 
-.poll-info p {
-  font-size: 1.125rem;
-  color: var(--dark-gray);
-  margin: 0 0 24px 0;
+.create-poll-btn:hover, .vote-btn:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+  box-shadow: 0 0 35px rgba(255,0,255,0.6);
 }
 
-/* Voting Options */
+/* === VOTE PAGE === */
 .voting-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  margin-top: 20px;
 }
 
 .vote-option {
-  display: block;
   position: relative;
-  padding: 12px 12px 12px 48px;
-  border: 1px solid var(--medium-gray);
-  border-radius: 8px;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
   font-size: 1.1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: 0.3s ease;
+  color: var(--text);
 }
 
 .vote-option:hover {
-  border-color: var(--primary-color);
+  box-shadow: 0 0 20px rgba(0,255,255,0.25);
+  border-color: var(--neon-blue);
+  background: rgba(0,255,255,0.07);
+  transform: translateY(-2px);
 }
 
-.vote-option input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.vote-checkmark {
-  position: absolute;
-  top: 50%;
-  left: 16px;
-  transform: translateY(-50%);
-  height: 22px;
+/* Custom Radio Buttons */
+.vote-option input[type="radio"] {
+  appearance: none;
   width: 22px;
-  background-color: var(--light-gray);
-  border: 1px solid var(--medium-gray);
+  height: 22px;
+  border: 2px solid var(--neon-pink);
+  border-radius: 50%;
+  margin-right: 14px;
+  transition: 0.3s ease;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
 }
 
-.vote-option input:checked ~ .vote-checkmark {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
+.vote-option input[type="radio"]:checked {
+  background: var(--neon-pink);
+  box-shadow: 0 0 20px rgba(255,0,255,0.6);
+  border-color: var(--neon-pink);
 }
 
-.vote-checkmark:after {
-  content: "";
+.vote-option input[type="radio"]:checked::after {
+  content: '';
   position: absolute;
-  display: none;
-}
-
-.vote-option input:checked ~ .vote-checkmark:after {
-  display: block;
-}
-
-/* Radio Button */
-.vote-option input[type="radio"] ~ .vote-checkmark {
-  border-radius: 50%;
-}
-.vote-option input[type="radio"]:checked ~ .vote-checkmark:after {
-  top: 6px;
-  left: 6px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  inset: 5px;
   background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255,255,255,0.8);
 }
 
-/* Checkbox Button */
-.vote-option input[type="checkbox"] ~ .vote-checkmark {
-  border-radius: 4px;
-}
-.vote-option input[type="checkbox"]:checked ~ .vote-checkmark:after {
-  left: 7px;
-  top: 4px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 3px 3px 0;
-  transform: rotate(45deg);
-}
-
-.vote-btn {
-  background-color: var(--primary-color);
-  color: var(--white);
-  padding: 14px;
-  font-size: 1.1rem;
-}
-.vote-btn:hover {
-  background-color: #1d4ed8;
-}
-.vote-btn:disabled {
-  background-color: var(--medium-gray);
-  cursor: not-allowed;
-}
-
-
-/* --- Poll Results (NEW) --- */
+/* === RESULTS PAGE === */
 .poll-results h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-bottom: 1px solid var(--light-gray);
-  padding-bottom: 8px;
-}
-
-.total-votes {
-  font-size: 1rem;
-  color: var(--dark-gray);
-  font-weight: 500;
-  margin-bottom: 24px;
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 25px;
 }
 
 .result-bar-wrapper {
-  margin-bottom: 16px;
-}
-
-.result-bar-label {
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 18px;
 }
 
 .result-bar {
-  width: 100%;
-  height: 24px;
-  background-color: var(--light-gray);
-  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  height: 26px;
   overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .result-bar-fill {
   height: 100%;
-  background-color: var(--primary-color);
-  border-radius: 6px;
-  transition: width 0.5s ease-in-out;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  color: white;
-  font-size: 0.8rem;
-  padding-right: 8px;
-  box-sizing: border-box;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink), var(--neon-green));
+  box-shadow: 0 0 20px rgba(0,255,255,0.4);
+  border-radius: 10px;
+  animation: fillUp 1.2s ease forwards;
 }
 
-.result-percentage {
-  font-size: 0.9rem;
-  color: var(--dark-gray);
+@keyframes fillUp {
+  from { width: 0%; }
+  to { width: var(--width); }
 }
 
-/* --- Share Section (NEW) --- */
-.share-container {
-  background-color: var(--white);
-  padding: 24px 32px;
-  border-radius: 12px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  margin-top: 24px;
-}
-
-.share-container h3 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.share-input-group {
-  display: flex;
-  gap: 8px;
-}
-
-.share-input-group input[type="text"] {
-  flex-grow: 1;
-  padding: 10px 14px;
+/* Total Votes */
+.total-votes {
+  text-align: center;
   font-size: 1rem;
-  border: 1px solid var(--medium-gray);
-  border-radius: 8px;
-  background-color: var(--light-gray);
-  color: var(--dark-gray);
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+/* Share Poll Section */
+.share-container {
+  background: rgba(255,255,255,0.05);
+  padding: 14px;
+  border-radius: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  box-shadow: 0 0 10px rgba(255,255,255,0.05);
+}
+
+.share-container input[type="text"] {
+  flex: 1;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
 }
 
 .share-copy-btn {
-  flex-shrink: 0;
-  background-color: var(--dark-gray);
-  color: var(--white);
-  padding: 10px 16px;
-  min-width: 80px;
+  background: var(--neon-blue);
+  color: black;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
 .share-copy-btn:hover {
-  background-color: #374151; /* gray-700 */
+  background: var(--neon-pink);
+  color: white;
+  box-shadow: 0 0 15px rgba(255,0,255,0.5);
 }
