@@ -1,43 +1,33 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const mongoose = require("mongoose");
-const pollRoutes = require("./routes/polls");
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
-// Load Environment Variables (MONGO_URI)
-dotenv.config();
+// --- Import Routes ---
+// Import Poll routes (assuming the file is named routes/polls.js)
+const pollRoutes = require('./routes/polls.js');
+// Import Auth routes (assuming the file is named routes/auth.js)
+const authRoutes = require('./routes/auth.js'); 
 
-// Connect to MongoDB
-const mongoURI = process.env.MONGO_URI;
-
-if (!mongoURI) {
-  console.error("❌ MONGO_URI is missing in .env file! Exiting.");
-  process.exit(1);
-}
-
-mongoose
-  .connect(mongoURI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
-
-// --- EXPRESS SETUP ---
 const app = express();
-
-// --- LOCAL DEVELOPMENT FIX ---
-// Use the simple, default cors() setup.
-// This will allow http://localhost:5173 to connect.
-app.use(cors());
-// --- END FIX ---
-
-// Trust proxies for correct IP retrieval (needed for IP-based voting)
-app.set("trust proxy", 1); 
-app.use(express.json());
-
-// Main API Route
-// This MUST match the frontend's baseURL
-app.use("/api/polls", pollRoutes);
-
-
-// --- Standard Local Server ---
 const PORT = process.env.PORT || 5000;
+
+// --- Middleware ---
+app.use(cors());
+// Crucial: Parses incoming JSON requests (needed for req.body)
+app.use(express.json()); 
+
+// --- Connect to MongoDB ---
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => console.log(`❌ MongoDB connection error: ${err.message}`));
+
+// --- Use Routes ---
+// Express uses these lines to map URLs to your route handlers
+app.use('/api/polls', pollRoutes);
+app.use('/api/auth', authRoutes); 
+
 app.listen(PORT, () => console.log(`🚀 Local Server running on ${PORT}`));

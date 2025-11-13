@@ -1,248 +1,106 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import api from "../api";
-import "../styles.css";
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
-} from 'recharts';
-import { Share2, Copy, AlertTriangle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import * as api from '../api.js';
+import { jwtDecode } from 'jwt-decode'; // Make sure you ran: npm install jwt-decode
 
-// --- Results Component ---
-// This component displays the bar chart and percentage bars for results
-function PollResults({ poll }) {
-  const totalVotes = poll.options.reduce((acc, option) => acc + option.votes, 0);
-  
-  // Data for the bar chart
-  const chartData = poll.options.map((option, index) => ({
-    name: option.text.length > 15 ? option.text.substring(0, 15) + '...' : option.text,
-    votes: option.votes,
-  }));
-
-  // Colors for the bar chart
-  const COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
-
-  return (
-    <div className="poll-results">
-      <h3>Results</h3>
-      <p className="total-votes">Total Votes: {totalVotes}</p>
-
-      {/* Bar Chart */}
-      <div style={{ width: '100%', height: 300, marginBottom: '24px' }}>
-        <ResponsiveContainer>
-          <BarChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-            <XAxis dataKey="name" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar dataKey="votes" fill="#8884d8">
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Percentage Bars */}
-      {poll.options.map((option, index) => {
-        const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
-        return (
-          <div className="result-bar-wrapper" key={index}>
-            <div className="result-bar-label">
-              <span>{option.text}</span>
-              <span className="result-percentage">{option.votes} ({percentage.toFixed(0)}%)</span>
-            </div>
-            <div className="result-bar">
-              <div 
-                className="result-bar-fill" 
-                style={{ width: `${percentage}%` }}
-              >
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// --- Share Component ---
-// This component displays the shareable link and copy button
-function SharePoll({ pollId }) {
-  const [copied, setCopied] = useState(false);
-  const pollUrl = `${window.location.origin}/poll/${pollId}`;
-
-  const handleCopy = () => {
-    // This uses the modern clipboard API
-    navigator.clipboard.writeText(pollUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-    });
-  };
-
-  return (
-    <div className="share-container">
-      <h3><Share2 size={20} style={{ verticalAlign: 'middle', marginRight: '8px' }}/>Share This Poll</h3>
-      <div className="share-input-group">
-        <input type="text" value={pollUrl} readOnly />
-        <button onClick={handleCopy} className="share-copy-btn">
-          {copied ? "Copied!" : <Copy size={16} />}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-
-// --- Main Poll Page Component ---
-export default function PollPage() {
+const PollPage = () => {
   const [poll, setPoll] = useState(null);
+  const [selectedOption, setSelectedOption] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
+  const [hasVoted, setHasVoted] = useState(false); // <-- FIX IS HERE
   
-  // NEW: State for voting
-  const [selectedOptions, setSelectedOptions] = useState([]); // Use an array for multi-select
-  const [isPollClosed, setIsPollClosed] = useState(false);
-  const [showResults, setShowResults] = useState(false); // Show results after voting
-  
-  const { id: pollId } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  // Fetch the poll data
   useEffect(() => {
     const fetchPoll = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        const res = await api.get(`/polls/${pollId}`);
-        setPoll(res.data);
-        
-        // Check if poll is expired
-        if (res.data.expiresAt && new Date() > new Date(res.data.expiresAt)) {
-          setIsPollClosed(true);
-          setShowResults(true); // Automatically show results if expired
-          setError("This poll has expired and is no longer accepting votes.");
+        const { data } = await api.getPoll(id);
+        setPoll(data);
+
+        // --- CHECK IF USER HAS VOTED ---
+        const token = localStorage.getItem('token');
+        if (token) {
+          const user = jwtDecode(token);
+          const userId = user.user.id;
+          
+          // Check if the poll's voters array (sent from backend) includes this user
+          if (data.voters && data.voters.includes(userId)) {
+            setHasVoted(true);
+          }
         }
       } catch (err) {
-        console.error("Error fetching poll:", err);
-        const errMsg = err.response?.data?.error || "Poll not found.";
-        setError(errMsg);
+        setError('Could not load poll.');
       } finally {
         setLoading(false);
       }
     };
     fetchPoll();
-  }, [pollId]);
+  }, [id]);
 
-  // Handle selection for BOTH radio and checkbox
-  const handleSelectionChange = (optionIndex) => {
-    if (poll.multipleAnswers) {
-      // Checkbox logic (multiple)
-      if (selectedOptions.includes(optionIndex)) {
-        setSelectedOptions(selectedOptions.filter(idx => idx !== optionIndex));
-      } else {
-        setSelectedOptions([...selectedOptions, optionIndex]);
-      }
-    } else {
-      // Radio button logic (single)
-      setSelectedOptions([optionIndex]);
-    }
-  };
-
-  // Handle vote submission
-  const handleSubmitVote = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedOptions.length === 0) {
-      setError("Please select at least one option.");
+    setError(''); 
+    if (!selectedOption) {
+      setError('Please select an option.');
       return;
     }
-    
-    setError(null);
-
     try {
-      // Send an array of indices, matching the new backend
-      const res = await api.post(`/polls/${pollId}/vote`, {
-        optionIndices: selectedOptions,
-      });
-      setPoll(res.data); // Update poll with new vote counts
-      setShowResults(true); // Show results after successful vote
+      await api.voteOnPoll(id, selectedOption);
+      navigate(`/results/${id}`);
     } catch (err) {
-      console.error("Error voting:", err);
-      const errMsg = err.response?.data?.error || "Failed to submit vote.";
-      setError(errMsg);
-      
-      // If error is "Already voted" or "Expired", show results
-      if (errMsg.includes("voted") || errMsg.includes("expired")) {
-        setIsPollClosed(true);
-        setShowResults(true);
+      // Handle the "Already voted" error from the server
+      setError(err.response?.data?.msg || 'Failed to submit vote.');
+      if (err.response?.data?.msg === 'You have already voted in this poll') {
+        setHasVoted(true); // Sync UI
       }
+      console.error(err);
     }
   };
 
-  if (loading) return <div className="container"><h2>Loading Poll...</h2></div>;
-  
-  // Show a hard error for "Poll not found"
-  if (!poll && error) {
+  if (loading) return <div>Loading poll...</div>;
+  if (error && !hasVoted) return <div style={{ color: 'red' }}>{error}</div>;
+  if (!poll) return <div>Poll not found.</div>;
+
+  // --- NEW RENDER LOGIC ---
+  // If user has already voted, show a message instead of the form
+  if (hasVoted) {
     return (
-      <div className="container error-message">
-        <AlertTriangle size={24} />
-        <strong style={{marginLeft: '10px'}}>{error}</strong>
+      <div style={{ color: 'white', textAlign: 'center', padding: '2rem' }}>
+        <h2>You have already voted in this poll.</h2>
+        <p>Thank you for your participation!</p>
+        <Link to={`/results/${id}`}>
+          <button style={{ marginTop: '1rem' }}>View Results</button>
+        </Link>
       </div>
     );
   }
 
-  // This should not happen, but good to have
-  if (!poll) return null;
-
+  // If user has NOT voted, show the form
   return (
-    <div className="poll-page-container">
-      <div className="poll-info">
-        
-        {/* --- Header --- */}
-        <h2>{poll.question}</h2>
-        {poll.expiresAt && (
-          <p style={{ color: isPollClosed ? 'var(--red)' : 'var(--dark-gray)' }}>
-            <Clock size={16} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-            {isPollClosed ? 'Poll closed' : `Closes on: ${new Date(poll.expiresAt).toLocaleString()}`}
-          </p>
-        )}
-
-        {/* --- Error Display --- */}
-        {error && !loading && (
-          <div className="error-message" style={{ marginBottom: '16px' }}>
-            {error}
+    <div style={{ color: 'white' }}>
+      <h2>{poll.question}</h2>
+      <form onSubmit={handleSubmit}>
+        {poll.options.map((option) => (
+          <div key={option._id} style={{ margin: '0.5rem 0', padding: '0.5rem', border: '1px solid #333', borderRadius: '4px' }}>
+            <input
+              type="radio"
+              id={option._id}
+              name="pollOption"
+              value={option._id}
+              onChange={(e) => setSelectedOption(e.target.value)}
+            />
+            <label htmlFor={option._id} style={{ marginLeft: '10px', fontSize: '1.1rem' }}>
+              {option.text}
+            </label>
           </div>
-        )}
-
-        {/* --- Voting Form OR Results --- */}
-        {!showResults ? (
-          <form className="voting-form" onSubmit={handleSubmitVote}>
-            {poll.options.map((option, index) => (
-              <label className="vote-option" key={index}>
-                {option.text}
-                <input
-                  type={poll.multipleAnswers ? "checkbox" : "radio"}
-                  name="pollOption"
-                  checked={selectedOptions.includes(index)}
-                  onChange={() => handleSelectionChange(index)}
-                />
-                <span className="vote-checkmark"></span>
-              </label>
-            ))}
-            <button 
-              type="submit" 
-              className="vote-btn" 
-              disabled={selectedOptions.length === 0}
-            >
-              Submit Vote
-            </button>
-          </form>
-        ) : (
-          <PollResults poll={poll} />
-        )}
-
-      </div>
-      
-      {/* Share Poll Component */}
-      <SharePoll pollId={pollId} />
+        ))}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <button type="submit" style={{ marginTop: '1rem' }}>Submit Vote</button>
+      </form>
     </div>
   );
-}
+};
+
+export default PollPage;

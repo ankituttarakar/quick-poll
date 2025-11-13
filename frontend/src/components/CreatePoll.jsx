@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles.css";
-import api from "../api";
+import * as api from "../api"; // <-- FIXED: Changed to import * as api
 
 export default function CreatePoll() {
   const [question, setQuestion] = useState("");
@@ -22,7 +22,7 @@ export default function CreatePoll() {
 
   const addOption = () => setOptions([...options, ""]);
 
-  // NEW: Function to remove an option
+  // Function to remove an option
   const removeOption = (i) => {
     // Only allow removal if there are more than 2 options
     if (options.length > 2) {
@@ -43,10 +43,13 @@ export default function CreatePoll() {
       return;
     }
 
+    // Format options for the backend (as an array of objects with 'text' property)
+    const formattedOptions = validOptions.map(opt => ({ text: opt.trim() }));
+
     // Build the payload for the API
     const payload = {
       question,
-      options: validOptions,
+      options: formattedOptions, // Use the formatted array
       multipleAnswers,
     };
 
@@ -56,17 +59,23 @@ export default function CreatePoll() {
     }
 
     try {
-      const res = await api.post("/polls", payload);
-      navigate(`/poll/${res.data.pollId}`);
+      // *** FIXED: Now correctly calling the named export function ***
+      const res = await api.createPoll(payload); 
+      // Assuming your backend responds with the poll object, including an _id field
+      const pollId = res.data._id || res.data.id || res.data.pollId; 
+      if (pollId) {
+        navigate(`/poll/${pollId}`);
+      } else {
+         setError("Poll created, but ID was missing from response.");
+      }
     } catch (err) {
       console.error("Error creating poll:", err);
-      const errMsg = err.response?.data?.error || "Error creating poll. Please try again.";
+      const errMsg = err.response?.data?.msg || "Error creating poll. Please check if you are logged in and if your backend is running.";
       setError(errMsg);
     }
   };
 
   // FIX: This function formats the current date-time for the 'min' attribute
-  // of datetime-local input, preventing the "invalid date" bug.
   const getMinDateTime = () => {
     const now = new Date();
     // Offset for local timezone
@@ -116,7 +125,7 @@ export default function CreatePoll() {
           + Add Option
         </button>
 
-        {/* --- NEW: Poll Settings Section --- */}
+        {/* --- Poll Settings Section --- */}
         <div className="poll-settings">
           <h4>Poll Settings</h4>
           <div className="setting-row">
@@ -136,14 +145,14 @@ export default function CreatePoll() {
               id="expiresAt"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              min={getMinDateTime()} // This is the fix for the date bug
+              min={getMinDateTime()} // This prevents entering past dates
             />
           </div>
         </div>
         
-        {/* --- NEW: Error Display --- */}
+        {/* --- Error Display --- */}
         {error && (
-          <div className="error-message">
+          <div className="error-message" style={{color: 'red', margin: '1rem 0'}}>
             {error}
           </div>
         )}

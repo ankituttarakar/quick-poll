@@ -1,98 +1,131 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const Poll = require("../models/Poll");
-const shortid = require("shortid");
+const Poll = require('../models/Poll');
+const auth = require('../middleware/auth');
 
-// ✅ CREATE a new poll
-router.post("/", async (req, res) => {
-  try {
-    // Get new optional fields from the request body
-    const { question, options, multipleAnswers, expiresAt } = req.body;
-
-    if (!question || !options || options.length < 2) {
-      return res.status(400).json({ error: "Please provide a question and at least two options." });
+// ... (keep your existing GET /, POST /, and POST /:id/vote routes) ...
+// ...
+router.get('/', async (req, res) => {
+    try {
+        const polls = await Poll.find().select('question created_at creator').sort({ created_at: -1 });
+        res.json(polls);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error fetching polls');
     }
-
-    const newPoll = new Poll({
-      question,
-      options: options.map((text) => ({ text })),
-      shortId: shortid.generate(),
-      
-      // Save new features
-      multipleAnswers: multipleAnswers || false,
-      expiresAt: expiresAt || null, // Save the date, or null if not provided
-    });
-
-    await newPoll.save();
-    res.json({ pollId: newPoll.shortId });
-  } catch (error) {
-    console.error("Error creating poll:", error);
-    res.status(500).json({ error: "Failed to create poll" });
-  }
 });
 
-// ✅ GET a poll by shortId (for viewing)
-router.get("/:shortId", async (req, res) => {
-  try {
-    const poll = await Poll.findOne({ shortId: req.params.shortId });
-    if (!poll) return res.status(404).json({ error: "Poll not found" });
-    res.json(poll);
-  } catch (error) {
-    console.error("Error fetching poll:", error);
-    res.status(500).json({ error: "Failed to fetch poll" });
-  }
-});
-
-// ✅ VOTE for an option (or options)
-router.post("/:shortId/vote", async (req, res) => {
-  try {
-    // We now expect an array of indices, e.g. [1] or [0, 2]
-    const { optionIndices } = req.body; 
-    const poll = await Poll.findOne({ shortId: req.params.shortId });
-    const ip = req.ip; // Get the user's IP
-
-    if (!poll) {
-      return res.status(404).json({ error: "Poll not found" });
-    }
-
-    // --- FEATURE 1: Check Expiration ---
-    if (poll.expiresAt && new Date() > poll.expiresAt) {
-      return res.status(400).json({ error: "This poll has expired." });
-    }
-
-    // --- FEATURE 2: Check IP Address ---
-    if (poll.votedIPs.includes(ip)) {
-      return res.status(400).json({ error: "You have already voted on this poll." });
-    }
-
-    // --- FEATURE 3: Validate Multiple Answers ---
-    if (!poll.multipleAnswers && optionIndices.length > 1) {
-      return res.status(400).json({ error: "This poll only accepts one answer." });
-    }
-
-    // --- Process the vote(s) ---
-    let votedSuccessfully = false;
-    optionIndices.forEach(index => {
-      if (poll.options[index]) {
-        poll.options[index].votes += 1;
-        votedSuccessfully = true;
-      }
-    });
-
-    if (!votedSuccessfully) {
-      return res.status(400).json({ error: "Invalid option selected." });
-    }
-
-    // Add this IP to the list to prevent re-voting
-    poll.votedIPs.push(ip);
+router.post('/', auth, async (req, res) => {
+    const { question, options } = req.body;
     
-    await poll.save();
-    res.json(poll); // Send back the updated poll data
+    if (!question || !options || options.length < 2) {
+        return res.status(400).json({ msg: 'Please provide a question and at least two options.' });
+    }
+    
+    const validOptions = options.map(opt => ({ text: opt.text || opt }));
+    if (validOptions.some(opt => opt.text.trim() === '')) {
+        return res.status(400).json({ msg: 'Options cannot be empty.' });
+    }
 
-  } catch (error) {
-    console.error("Error voting:", error);
-    res.status(500).json({ error: "Failed to vote" });
-  }
+    try {
+        const newPoll = new Poll({
+            question,
+            options: validOptions,
+            creator: req.user.id, 
+        });
+
+        const poll = await newPoll.save();
+        res.json(poll); 
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error during poll creation');
+    }
 });
+
+router.post('/:id/vote', auth, async (req, res) => {
+    const { optionId } = req.body;
+    const userId = req.user.id;
+
+    try {
+        const poll = await Poll.findById(req.params.id);
+        if (!poll) {
+            return res.status(404).json({ msg: 'Poll not found' });
+        }
+        
+        if (poll.voters.includes(userId)) {
+            return res.status(400).json({ msg: 'You have already voted in this poll' });
+        }
+
+        const option = poll.options.id(optionId);
+        if (!option) {
+            return res.status(404).json({ msg: 'Option not found' });
+        }
+
+        option.votes += 1;
+        poll.voters.push(userId);
+        await poll.save();
+        
+        res.json(poll); 
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error while recording vote');
+    }
+});
+// ...
+// ...
+
+// *** MODIFY THIS ROUTE ***
+// This route is for the VOTING page. It must send the voter IDs.
+router.get('/:id', async (req, res) => {
+    try {
+        // We select 'voters' so the frontend can check if the user has voted
+        const poll = await Poll.findById(req.params.id).select('question options voters');
+        if (!poll) {
+            return res.status(404).json({ msg: 'Poll not found' });
+        }
+        res.json(poll);
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Poll not found' });
+        }
+        res.status(500).send('Server Error fetching single poll');
+    }
+});
+
+
+// *** ADD THIS NEW ROUTE ***
+// This route is for the RESULTS page.
+// It is protected and only shows the voter list to the creator.
+router.get('/:id/results', auth, async (req, res) => {
+    try {
+        let poll;
+        
+        // Find the poll first
+        const basicPoll = await Poll.findById(req.params.id).select('question options creator comments');
+        if (!basicPoll) {
+             return res.status(404).json({ msg: 'Poll not found' });
+        }
+
+        // Check if the person requesting is the poll's creator
+        if (basicPoll.creator.toString() === req.user.id) {
+            // If they ARE the creator, re-fetch the poll and populate the voter names
+            poll = await Poll.findById(req.params.id)
+                .populate('comments.username', 'username') // (if you had comments)
+                .populate('voters', 'username'); // <-- Get usernames of voters
+        } else {
+            // If they are NOT the creator, just send the basic poll data
+            poll = basicPoll;
+        }
+
+        res.json(poll);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error getting results');
+    }
+});
+
 
 module.exports = router;

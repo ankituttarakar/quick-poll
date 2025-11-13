@@ -1,33 +1,29 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import PollList from "./components/PollList"; 
 import CreatePoll from "./components/CreatePoll";
 import PollPage from "./components/PollPage";
-import { BarChart3 } from "lucide-react";
+import Results from "./components/Results";
+import Login from "./components/Login";
+import Register from "./components/Register";
 import "./styles.css";
 
 function App() {
   return (
-    // The BrowserRouter MUST wrap the entire application
     <BrowserRouter>
-      {/* THIS IS THE FIX: We use the 'poll-page-container' class here.
-        This class has 'max-width: 600px' and 'margin: 0 auto', which will
-        center EVERYTHING inside it, including the header and the content below.
-      */}
-      <div className="poll-page-container">
-        <header>
-          <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <h1>
-              <BarChart3 size={26} color="#2563eb" />
-              QuickPoll
-            </h1>
-          </Link>
-          <p>Create polls and see results update in real-time</p>
-        </header>
-
-        {/* The routes will now render inside the centered container */}
+      <Navbar /> 
+      
+      <div className="container" style={{ padding: '2rem' }}>
         <Routes>
-          <Route path="/" element={<CreatePoll />} />
+          <Route path="/" element={<PollList />} /> 
+          
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          <Route path="/create" element={<CreatePoll />} />
           <Route path="/poll/:id" element={<PollPage />} />
+          <Route path="/results/:id" element={<Results />} />
         </Routes>
       </div>
     </BrowserRouter>
